@@ -1,10 +1,12 @@
 <?
+
+namespace Freelabois\WebserviceCaixa;
 /**
  * EXTENDS THE DOMDOCUMENT TO IMPLEMENT PERSONAL (UTILITY) METHODS.
  *
  * @AUTHOR TONI VAN DE VOORDE
  */
-class XmlDomConstruct extends DOMDocument {
+class XmlDomConstruct extends \DOMDocument {
 
     /**
      * CONSTRUCTS ELEMENTS AND TEXTS FROM AN ARRAY OR STRING.

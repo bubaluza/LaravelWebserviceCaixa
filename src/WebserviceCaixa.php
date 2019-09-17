@@ -1,4 +1,6 @@
 <?php
+
+namespace Freelabois\WebserviceCaixa;
 /**
  * Consulta e registro de boletos da Caixa Econômica Federal
  *
