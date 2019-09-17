@@ -1,5 +1,5 @@
 {
-    "name": "freelabois/ws-caixa",
+    "name": "freelabois/webservicecaixa",
     "description": "Webservice de acesso às operações básicas da caixa econômica federal",
     "keywords": ["laravel", "webservice", "caixa"],
     "type": "library",
@@ -21,7 +21,7 @@
     "extra": {
         "laravel": {
             "providers": [
-                "Freelabois\\WebserviceCaixa\\SMSVerificationServiceProvider"
+                "Freelabois\\WebserviceCaixa\\WebserviceCaixaServiceProvider"
             ]
         }
     }

@@ -1,52 +1,54 @@
-<?
+<?php
 
-namespace Freelabois\WebserviceCaixa;
+namespace Freelabois\WebserviceCaixa\lib;
+use DOMDocument;
+use DOMElement;
+
 /**
  * EXTENDS THE DOMDOCUMENT TO IMPLEMENT PERSONAL (UTILITY) METHODS.
  *
  * @AUTHOR TONI VAN DE VOORDE
  */
-class XmlDomConstruct extends \DOMDocument {
+class XmlDomConstruct extends DOMDocument {
 
-    /**
-     * CONSTRUCTS ELEMENTS AND TEXTS FROM AN ARRAY OR STRING.
-     * THE ARRAY CAN CONTAIN AN ELEMENT'S NAME IN THE INDEX PART
-     * AND AN ELEMENT'S TEXT IN THE VALUE PART.
-     *
-     * IT CAN ALSO CREATES AN XML WITH THE SAME ELEMENT TAGNAME ON THE SAME
-     * LEVEL.
-     *
-     * EX:
-     * <NODES>
-     *   <NODE>TEXT</NODE>
-     *   <NODE>
-     *     <FIELD>HELLO</FIELD>
-     *     <FIELD>WORLD</FIELD>
-     *   </NODE>
-     * </NODES>
-     *
-     * ARRAY SHOULD THEN LOOK LIKE:
-     *
-     * ARRAY (
-     *   "NODES" => ARRAY (
-     *     "NODE" => ARRAY (
-     *       0 => "TEXT"
-     *       1 => ARRAY (
-     *         "FIELD" => ARRAY (
-     *           0 => "HELLO"
-     *           1 => "WORLD"
-     *         )
-     *       )
-     *     )
-     *   )
-     * )
-     *
-     * @PARAM MIXED $MIXED AN ARRAY OR STRING.
-     *
-     * @PARAM DOMELEMENT[OPTIONAL] $DOMELEMENT THEN ELEMENT
-     * FROM WHERE THE ARRAY WILL BE CONSTRUCT TO.
-     *
-     */
+   /**
+    * CONSTRUCTS ELEMENTS AND TEXTS FROM AN ARRAY OR STRING.
+    * THE ARRAY CAN CONTAIN AN ELEMENT'S NAME IN THE INDEX PART
+    * AND AN ELEMENT'S TEXT IN THE VALUE PART.
+    *
+    * IT CAN ALSO CREATES AN XML WITH THE SAME ELEMENT TAGNAME ON THE SAME
+    * LEVEL.
+    *
+    * EX:
+    * <NODES>
+    *   <NODE>TEXT</NODE>
+    *   <NODE>
+    *     <FIELD>HELLO</FIELD>
+    *     <FIELD>WORLD</FIELD>
+    *   </NODE>
+    * </NODES>
+    *
+    * ARRAY SHOULD THEN LOOK LIKE:
+    *
+    * ARRAY (
+    *   "NODES" => ARRAY (
+    *     "NODE" => ARRAY (
+    *       0 => "TEXT"
+    *       1 => ARRAY (
+    *         "FIELD" => ARRAY (
+    *           0 => "HELLO"
+    *           1 => "WORLD"
+    *         )
+    *       )
+    *     )
+    *   )
+    * )
+    *
+    * @param $mixed $MIXED AN ARRAY OR STRING.
+    *
+    * @param $domElement[OPTIONAL] $DOMELEMENT THEN ELEMENT
+    * FROM WHERE THE ARRAY WILL BE CONSTRUCT TO.
+    */
     public function fromMixed($mixed, DOMElement $domElement = null) {
 
         $domElement = is_null($domElement) ? $this : $domElement;
