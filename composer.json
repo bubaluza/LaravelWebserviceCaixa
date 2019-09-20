@@ -11,7 +11,10 @@
         }
     ],
     "require": {
-        "laravel/framework": "^5.0"
+        "php": ">=7.0.0",
+        "laravel/framework": "^5.0",
+        "ext-dom": "*",
+        "ext-soap": "*"
     },
     "autoload": {
         "psr-4": {

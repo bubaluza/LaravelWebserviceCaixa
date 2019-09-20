@@ -17,21 +17,20 @@ return [
       "DESENVOLVIMENTO" => true,
 
       /**
+       * Tag <VERSAO> do <HEADER>
+       */
+      "VERSAO" => '1.2',
+
+      /**
        * Exibe informações de DEBUG quando igual a $_GET['DEBUG']
        */
       'HASH_DEBUG' => 'HASH SECRETO PARA DEBUG',
-   ],
 
-   /**
-    * informações que serão impressas no cabeçalho do boleto
-    */
-   "boleto" => [
-      'CEDENTE' => 'NOME DO CEDENTE',
-      'IDENTIFICACAO' => 'IDENTIFICACAO DO CEDENTE NO CABECALHO',
-      'CNPJ' => '999999999999999',
-      'ENDERECO1' => 'PRIMEIRA LINHA DE ENDERECO',
-      'ENDERECO2' => 'SEGUNDA LINHA DE ENDERECO',
-      'UNIDADE' => '9999',
+      /**
+       * configurações header wsdl caixa
+       */
+      'USUARIO_SERVICO' => 'SGCBS02P',
+      'SISTEMA_ORIGEM' => 'SIGCB',
    ],
 
    /**

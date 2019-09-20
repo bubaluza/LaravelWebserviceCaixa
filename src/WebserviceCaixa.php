@@ -3,7 +3,8 @@
 namespace Freelabois\WebserviceCaixa;
 
 use Freelabois\WebserviceCaixa\lib\XmlDomConstruct;
-use soapclient;
+use SoapClient;
+use stdClass;
 
 /**
  * Consulta e registro de boletos da Caixa Econômica Federal
@@ -21,7 +22,10 @@ class WebserviceCaixa
    var $consulta;
    var $resposta;
    var $nusoap;
-   var $DESENVOLVIMENTO;
+   private $DESENVOLVIMENTO;
+   private $VERSAO;
+   private $USUARIO_SERVICO;
+   private $SISTEMA_ORIGEM;
 
    /**
     * Construtor atribui e formata parâmetros em $this->args
@@ -30,6 +34,9 @@ class WebserviceCaixa
    {
       $this->resposta = array();
       $this->DESENVOLVIMENTO = config("webservice_caixa.config.DESENVOLVIMENTO");
+      $this->VERSAO = config("webservice_caixa.config.VERSAO");
+      $this->USUARIO_SERVICO = config("webservice_caixa.config.USUARIO_SERVICO");
+      $this->SISTEMA_ORIGEM = config("webservice_caixa.config.SISTEMA_ORIGEM");
 
 //		set_error_handler(array($this, 'ErrorHandler'));
 
@@ -87,9 +94,9 @@ class WebserviceCaixa
     *
     * Parâmetros mínimos para que o boleto possa ser consultado.
     */
-   function Consulta($args)
+   function Consulta($args = array(), $header = array())
    {
-      $args = array_merge($this->args, $args);
+      $args = $this->CleanArray(array_merge($this->args, $args));
 
       // Para consultas, DATA_VENCIMENTO e VALOR devem ser preenchidos com zeros
       $autenticacao = $this->HashAutenticacao(array_merge($args,
@@ -99,16 +106,25 @@ class WebserviceCaixa
          )
       ));
 
-      $xml_array = array(
-         'sibar_base:HEADER' => array(
-            'VERSAO' => '1.0',
+      $header = array_merge($header,
+         array(
+            'VERSAO' => $this->VERSAO,
             'AUTENTICACAO' => $autenticacao,
-            'USUARIO_SERVICO' => $this->DESENVOLVIMENTO ? 'SGCBS01D' : 'SGCBS02P',
+            'USUARIO_SERVICO' => $this->USUARIO_SERVICO,
             'OPERACAO' => 'CONSULTA_BOLETO',
-            'SISTEMA_ORIGEM' => 'SIGCB',
+            'SISTEMA_ORIGEM' => $this->SISTEMA_ORIGEM,
             'UNIDADE' => $args['UNIDADE'],
             'DATA_HORA' => date('YmdHis'),
-         ),
+         )
+      );
+
+      $xml_array = array(
+         'HEADER' => new \SoapVar($header,
+            SOAP_ENC_OBJECT,
+            null,
+            null,
+            "HEADER",
+            'http://caixa.gov.br/sibar'),
          'DADOS' => array(
             'CONSULTA_BOLETO' => array(
                'CODIGO_BENEFICIARIO' => $args['CODIGO_BENEFICIARIO'],
@@ -142,26 +158,15 @@ class WebserviceCaixa
     */
    function CallNuSOAP($wsdl, $operacao, $conteudo)
    {
-      $client = new soapclient($wsdl, [
-         "connection_timeout" => config("webservice_caixa.config.TIMEOUT"),
+
+      $client = new SoapClient($wsdl, [
+         'trace' => 1,
          "soap_version" => SOAP_1_1
       ]);
 
-      $response = $client->__soapCall($operacao, $conteudo);
-//		$response = $client->call($operacao, $conteudo, config("webservice_caixa.config.RETRIES"));
-//		$err = $client->getError();
-//
-//		if ($err) {
-//			print_r($client);
-//			trigger_error($err);
-//			$this->nusoap = array(
-//				'MENSAGEM' => $err,
-//				'RESPOSTA' => htmlspecialchars($client->response)
-//			);
-//		}
-//
-//		$this->consulta = $client->request;
-      $this->resposta = $response;
+      $response = $client->$operacao($conteudo);
+
+      $this->resposta = $this->arrayCastRecursive($response);
       return $this->resposta;
    }
 
@@ -192,46 +197,69 @@ class WebserviceCaixa
     * Realiza a operação de inclusão
     *
     * Parâmetros mínimos para que o boleto possa ser incluído.
+    * @param array $args
+    * @param array $header
+    * @param array $titulo
+    * @return array|mixed
+    * @throws \SoapFault
     */
-   function Inclui($args)
+   function Inclui($args = array(), $header = array(), $titulo = array())
    {
-      $args = array_merge($this->args, $args);
-      $xml_array = array(
-         'sibar_base:HEADER' => array(
-            'VERSAO' => '1.0',
+      $args = $this->CleanArray(array_merge($this->args, $args));
+      $header = array_merge($header,
+         array(
+            'VERSAO' => $this->VERSAO,
             'AUTENTICACAO' => $this->HashAutenticacao($args),
-            'USUARIO_SERVICO' => $this->DESENVOLVIMENTO ? 'SGCBS01D' : 'SGCBS02P',
+            'USUARIO_SERVICO' => $this->USUARIO_SERVICO,
             'OPERACAO' => 'INCLUI_BOLETO',
-            'SISTEMA_ORIGEM' => 'SIGCB',
+            'SISTEMA_ORIGEM' => $this->SISTEMA_ORIGEM,
             'UNIDADE' => $args['UNIDADE'],
             'DATA_HORA' => date('YmdHis'),
-         ),
-         'DADOS' => array(
-            'INCLUI_BOLETO' => array(
+         ));
+      $dados = array(
+         'INCLUI_BOLETO' =>
+            array(
                'CODIGO_BENEFICIARIO' => $args['CODIGO_BENEFICIARIO'],
-               'TITULO' => array(
-                  'NOSSO_NUMERO' => $args['NOSSO_NUMERO'],
-                  'NUMERO_DOCUMENTO' => $args['NUMERO_DOCUMENTO'],
-                  'DATA_VENCIMENTO' => $args['DATA_VENCIMENTO'],
-                  'VALOR' => $args['VALOR'],
-                  'TIPO_ESPECIE' => '99',
-                  'FLAG_ACEITE' => $args['FLAG_ACEITE'],
-                  'DATA_EMISSAO' => $args['DATA_EMISSAO'],
-                  'JUROS_MORA' => array(
-                     'TIPO' => 'ISENTO',
-                     'VALOR' => '0',
-                  ),
-                  'VALOR_ABATIMENTO' => '0',
-                  'POS_VENCIMENTO' => array(
-                     'ACAO' => 'DEVOLVER',
-                     'NUMERO_DIAS' => $args['NUMERO_DIAS'],
-                  ),
-                  'CODIGO_MOEDA' => '09',
-                  'PAGADOR' => $args['PAGADOR'],
-                  'FICHA_COMPENSACAO' => $args['FICHA_COMPENSACAO']
+               'TITULO' => array_merge($titulo,
+                  array(
+                     'NOSSO_NUMERO' => $args['NOSSO_NUMERO'],
+                     'NUMERO_DOCUMENTO' => $args['NUMERO_DOCUMENTO'],
+                     'DATA_VENCIMENTO' => $args['DATA_VENCIMENTO'],
+                     'VALOR' => $args['VALOR'],
+                     'TIPO_ESPECIE' => $args['TIPO_ESPECIE'] ?? $titulo["TIPO_ESPECIE"] ?? '99',
+                     'FLAG_ACEITE' => $args['FLAG_ACEITE'],
+                     'DATA_EMISSAO' => $args['DATA_EMISSAO'],
+                     'JUROS_MORA' => array_merge(
+                        array(
+                           'TIPO' => 'ISENTO',
+                           'VALOR' => '0',
+                        ),
+                        $args['JUROS_MORA'] ?? array(),
+                        $titulo["JUROS_MORA"] ?? array()
+                     ),
+                     'VALOR_ABATIMENTO' => $args['VALOR_ABATIMENTO'] ?? $titulo["VALOR_ABATIMENTO"] ?? '0',
+                     'POS_VENCIMENTO' => array_merge(array(
+                        'ACAO' => 'DEVOLVER',
+                        'NUMERO_DIAS' => $args['NUMERO_DIAS'] ?? 0,
+                     ),
+                        $args['POS_VENCIMENTO'] ?? array(),
+                        $titulo["POS_VENCIMENTO"] ?? array()
+                     ),
+                     'CODIGO_MOEDA' => '09',
+                     'PAGADOR' => $args['PAGADOR'],
+                  )
                )
             )
-         )
+      );
+
+      $xml_array = array(
+         'HEADER' => new \SoapVar($header,
+            SOAP_ENC_OBJECT,
+            null,
+            null,
+            "HEADER",
+            'http://caixa.gov.br/sibar'),
+         'DADOS' => $dados
       );
 
       return $this->Manutencao($xml_array, 'INCLUI_BOLETO');
@@ -247,8 +275,7 @@ class WebserviceCaixa
     */
    function Manutencao($xml_array, $operacao)
    {
-
-      return $this->CallNuSOAP($this->wsdl_manutencao, $operacao, $this->ManutencaoXml($xml_array));
+      return $this->CallNuSOAP($this->wsdl_manutencao, $operacao, $xml_array);
    }
 
    /**
@@ -256,70 +283,110 @@ class WebserviceCaixa
     *
     * Operações de inclusão e alteração
     */
-   function ManutencaoXml($args)
-   {
-      $xml_root = 'manutencaocobrancabancaria:SERVICO_ENTRADA';
-      $xml = new XmlDomConstruct('1.0', 'iso-8859-1');
-      $xml->preserveWhiteSpace = !$this->DESENVOLVIMENTO;
-      $xml->formatOutput = $this->DESENVOLVIMENTO;
-      $xml->fromMixed(array($xml_root => $args));
-      $xml_root_item = $xml->getElementsByTagName($xml_root)->item(0);
-      $xml_root_item->setAttribute('xmlns:manutencaocobrancabancaria',
-         'http://caixa.gov.br/sibar/manutencao_cobranca_bancaria/boleto/externo');
-      $xml_root_item->setAttribute('xmlns:sibar_base',
-         'http://caixa.gov.br/sibar');
-
-      $xml_string = $xml->saveXML();
-      $xml_string = preg_replace('/^<\?.*\?>/', '', $xml_string);
-      $xml_string = preg_replace('/<(\/)?MENSAGEM[0-9]>/', '<\1MENSAGEM>', $xml_string);
-
-      return $xml_string;
-   }
+//   function ManutencaoXml($args)
+//   {
+//      $xml_root = 'manutencaocobrancabancaria:SERVICO_ENTRADA';
+//      $xml = new XmlDomConstruct('1.0', 'iso-8859-1');
+//      $xml->preserveWhiteSpace = !$this->DESENVOLVIMENTO;
+//      $xml->formatOutput = $this->DESENVOLVIMENTO;
+//      $xml->fromMixed(array($xml_root => $args));
+//      $xml_root_item = $xml->getElementsByTagName($xml_root)->item(0);
+//      $xml_root_item->setAttribute('xmlns:manutencaocobrancabancaria',
+//         'http://caixa.gov.br/sibar/manutencao_cobranca_bancaria/boleto/externo');
+//      $xml_root_item->setAttribute('xmlns:sibar_base',
+//         'http://caixa.gov.br/sibar');
+//
+//      $xml_string = $xml->saveXML();
+/*      $xml_string = preg_replace('/^<\?.*\?>/', '', $xml_string);*/
+//      $xml_string = preg_replace('/<(\/)?MENSAGEM[0-9]>/', '<\1MENSAGEM>', $xml_string);
+//
+//      return $xml_string;
+//   }
 
    /**
     * Realiza a operação de alteração
     *
     * Parâmetros mínimos para que o boleto possa ser alterado.
     */
-   function Altera($args)
+   function Altera($args = array(), $header = array(), $titulo = array())
    {
-      $args = array_merge($this->args, $args);
-      $xml_array = array(
-         'sibar_base:HEADER' => array(
-            'VERSAO' => '1.0',
+      $args = $this->CleanArray(array_merge($this->args, $args));
+
+      $header = array_merge($header,
+         array(
+            'VERSAO' => $this->VERSAO,
             'AUTENTICACAO' => $this->HashAutenticacao($args),
-            'USUARIO_SERVICO' => $this->DESENVOLVIMENTO ? 'SGCBS01D' : 'SGCBS02P',
+            'USUARIO_SERVICO' => $this->USUARIO_SERVICO,
             'OPERACAO' => 'ALTERA_BOLETO',
-            'SISTEMA_ORIGEM' => 'SIGCB',
+            'SISTEMA_ORIGEM' => $this->SISTEMA_ORIGEM,
             'UNIDADE' => $args['UNIDADE'],
             'DATA_HORA' => date('YmdHis'),
-         ),
-         'DADOS' => array(
-            'ALTERA_BOLETO' => array(
-               'CODIGO_BENEFICIARIO' => $args['CODIGO_BENEFICIARIO'],
-               'TITULO' => array(
-                  'NOSSO_NUMERO' => $args['NOSSO_NUMERO'],
-                  'NUMERO_DOCUMENTO' => $args['NUMERO_DOCUMENTO'],
-                  'DATA_VENCIMENTO' => $args['DATA_VENCIMENTO'],
-                  'VALOR' => $args['VALOR'],
-                  'TIPO_ESPECIE' => '99',
-                  'FLAG_ACEITE' => $args['FLAG_ACEITE'],
-                  'JUROS_MORA' => array(
-                     'TIPO' => 'ISENTO',
-                     'VALOR' => '0',
-                  ),
-                  'VALOR_ABATIMENTO' => '0',
-                  'POS_VENCIMENTO' => array(
-                     'ACAO' => 'DEVOLVER',
-                     'NUMERO_DIAS' => $args['NUMERO_DIAS'],
-                  ),
-                  'FICHA_COMPENSACAO' => $args['FICHA_COMPENSACAO']
-               ),
-            )
          )
       );
 
+      $dados = array(
+         'ALTERA_BOLETO' =>
+            array(
+               'CODIGO_BENEFICIARIO' => $args['CODIGO_BENEFICIARIO'],
+               'TITULO' => array_merge($titulo,
+                  array(
+                     'NOSSO_NUMERO' => $args['NOSSO_NUMERO'],
+                     'NUMERO_DOCUMENTO' => $args['NUMERO_DOCUMENTO'],
+                     'DATA_VENCIMENTO' => $args['DATA_VENCIMENTO'],
+                     'VALOR' => $args['VALOR'],
+                     'TIPO_ESPECIE' => $args['TIPO_ESPECIE'] ?? $titulo["TIPO_ESPECIE"] ?? '99',
+                     'FLAG_ACEITE' => $args['FLAG_ACEITE'],
+                     'JUROS_MORA' => array_merge(
+                        array(
+                           'TIPO' => 'ISENTO',
+                           'VALOR' => '0',
+                        ),
+                        $args['JUROS_MORA'] ?? array(),
+                        $titulo["JUROS_MORA"] ?? array()
+                     ),
+                     'VALOR_ABATIMENTO' => $args['VALOR_ABATIMENTO'] ?? $titulo["VALOR_ABATIMENTO"] ?? '0',
+                     'POS_VENCIMENTO' => array_merge(array(
+                        'ACAO' => 'DEVOLVER',
+                        'NUMERO_DIAS' => $args['NUMERO_DIAS'] ?? 0,
+                     ),
+                        $args['POS_VENCIMENTO'] ?? array(),
+                        $titulo["POS_VENCIMENTO"] ?? array()
+                     ),
+                     'CODIGO_MOEDA' => '09',
+                  )
+               )
+            )
+      );
+
+      $xml_array = array(
+         'HEADER' => new \SoapVar($header,
+            SOAP_ENC_OBJECT,
+            null,
+            null,
+            "HEADER",
+            'http://caixa.gov.br/sibar'),
+         'DADOS' => $dados
+      );
+
       return $this->Manutencao($xml_array, 'ALTERA_BOLETO');
+   }
+
+   function arrayCastRecursive($array)
+   {
+      if (is_array($array)) {
+         foreach ($array as $key => $value) {
+            if (is_array($value)) {
+               $array[$key] = $this->arrayCastRecursive($value);
+            }
+            if ($value instanceof stdClass) {
+               $array[$key] = $this->arrayCastRecursive((array)$value);
+            }
+         }
+      }
+      if ($array instanceof stdClass) {
+         return $this->arrayCastRecursive((array)$array);
+      }
+      return $array;
    }
 
    /**
