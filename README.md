@@ -6,10 +6,9 @@ de cobranças registradas no Webservice da Caixa Econômica Federal.
 ## Modo de uso
 
 ```php
-include('WebserviceCaixa.php');
 $ws = new WebserviceCaixa($parametros_do_emissor);
 $ws->Inclui($parametros_de_inclusao);
-echo $ws->GetUrlBoleto();
+return $ws->GetUrlBoleto();
 ```
 
 Verifique o [arquivo de exemplo](Exemplo.php) para ver como construir
@@ -29,7 +28,6 @@ curl -s https://raw.githubusercontent.com/CobreGratis/boletophp/master/include/f
 E no código chame o método `$ws->GeraBoletoPHP()`:
 
 ```php
-include('WebserviceCaixa.php');
 $ws = new WebserviceCaixa($parametros_do_emissor);
 $ws->Inclui($parametros_de_inclusao);
 $ws->GeraBoletoPHP(); // exibe boleto na tela
@@ -37,23 +35,11 @@ $ws->GeraBoletoPHP(); // exibe boleto na tela
 
 ## Configuração
 
-Para sobrescrever as configurações padrões, crie um arquivo de configuração:
+Para sobrescrever as configurações padrões, altere o arquivo de configuração:
 
 ```sh
-cp ConfigPadrao.php Config.php
-```
-
-Para colocar em produção, desabilite o modo de desenvolvimento para enviar
-os atributos corretos ao serviço da Caixa:
-
-```php
-define('DESENVOLVIMENTO', false);
-```
-
-## Executar com Docker
-
-```sh
-docker run -it --rm --name WebserviceCaixa -v "$PWD":/usr/src/myapp -w /usr/src/myapp php:5-alpine php Exemplo.php
+php artisan vendor:publish
+alterar config webservice_caixa.php
 ```
 
 ## Depuração
