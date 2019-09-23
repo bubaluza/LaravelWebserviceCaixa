@@ -569,8 +569,8 @@ class WebserviceCaixa
    {
       return isset($this->resposta['DADOS']['CONTROLE_NEGOCIAL']['COD_RETORNO']) ?
          $this->resposta['DADOS']['CONTROLE_NEGOCIAL']['COD_RETORNO'] :
-         isset($this->resposta['COD_RETORNO']) ?
-            $this->resposta['COD_RETORNO'] : null;
+         (isset($this->resposta['COD_RETORNO']) ?
+            $this->resposta['COD_RETORNO'] : null);
    }
 
    function GetMensagemRetorno()
