@@ -133,7 +133,7 @@ class WebserviceCaixa
          )
       );
 
-      $this->CallNuSOAP($this->wsdl_consulta, 'CONSULTA_BOLETO',$xml_array);
+      return $this->CallNuSOAP($this->wsdl_consulta, 'CONSULTA_BOLETO',$xml_array);
    }
 
    /**
