@@ -133,7 +133,7 @@ class WebserviceCaixa
          )
       );
 
-      $this->CallNuSOAP($this->wsdl_consulta, 'CONSULTA_BOLETO', $this->ConsultaXml($xml_array));
+      $this->CallNuSOAP($this->wsdl_consulta, 'CONSULTA_BOLETO',$xml_array);
    }
 
    /**
@@ -277,31 +277,6 @@ class WebserviceCaixa
    {
       return $this->CallNuSOAP($this->wsdl_manutencao, $operacao, $xml_array);
    }
-
-   /**
-    * Construção do documento XML para operações de manutenção
-    *
-    * Operações de inclusão e alteração
-    */
-//   function ManutencaoXml($args)
-//   {
-//      $xml_root = 'manutencaocobrancabancaria:SERVICO_ENTRADA';
-//      $xml = new XmlDomConstruct('1.0', 'iso-8859-1');
-//      $xml->preserveWhiteSpace = !$this->DESENVOLVIMENTO;
-//      $xml->formatOutput = $this->DESENVOLVIMENTO;
-//      $xml->fromMixed(array($xml_root => $args));
-//      $xml_root_item = $xml->getElementsByTagName($xml_root)->item(0);
-//      $xml_root_item->setAttribute('xmlns:manutencaocobrancabancaria',
-//         'http://caixa.gov.br/sibar/manutencao_cobranca_bancaria/boleto/externo');
-//      $xml_root_item->setAttribute('xmlns:sibar_base',
-//         'http://caixa.gov.br/sibar');
-//
-//      $xml_string = $xml->saveXML();
-/*      $xml_string = preg_replace('/^<\?.*\?>/', '', $xml_string);*/
-//      $xml_string = preg_replace('/<(\/)?MENSAGEM[0-9]>/', '<\1MENSAGEM>', $xml_string);
-//
-//      return $xml_string;
-//   }
 
    /**
     * Realiza a operação de alteração
